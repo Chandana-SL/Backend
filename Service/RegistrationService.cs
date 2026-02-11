@@ -3,6 +3,7 @@ using TimeTrack.API.DTOs.Registration;
 using TimeTrack.API.Models;
 using TimeTrack.API.Models.Enums;
 using TimeTrack.API.Repository.IRepository;
+using TaskAsync = System.Threading.Tasks.Task;
 
 namespace TimeTrack.API.Service;
 
@@ -169,7 +170,7 @@ public class RegistrationService : IRegistrationService
         };
     }
 
-    public async Task DeleteRegistrationAsync(int registrationId)
+    public async TaskAsync DeleteRegistrationAsync(int registrationId)
     {
         var registration = await _unitOfWork.PendingRegistrations.GetByIdAsync(registrationId);
         if (registration == null)

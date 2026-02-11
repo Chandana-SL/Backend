@@ -1,10 +1,11 @@
 using TimeTrack.API.Models;
+using TaskAsync = System.Threading.Tasks.Task;
 
 namespace TimeTrack.API.Data;
 
 public static class DatabaseSeeder
 {
-    public static async Task SeedAsync(TimeTrackDbContext context)
+    public static async TaskAsync SeedAsync(TimeTrackDbContext context)
     {
         // Check if admin user already exists
         if (!context.Users.Any(u => u.Email == "admin@backend.com"))

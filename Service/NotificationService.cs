@@ -1,5 +1,6 @@
 using TimeTrack.API.Models;
 using TimeTrack.API.Repository.IRepository;
+using TaskAsync = System.Threading.Tasks.Task;
 
 namespace TimeTrack.API.Service;
 
@@ -12,7 +13,7 @@ public class NotificationService : INotificationService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task CreateNotificationAsync(int userId, string type, string message)
+    public async TaskAsync CreateNotificationAsync(int userId, string type, string message)
     {
         var notification = new NotificationEntity
         {
@@ -27,51 +28,51 @@ public class NotificationService : INotificationService
         await _unitOfWork.SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<NotificationEntity>> GetUserNotificationsAsync(int userId)
+    public async System.Threading.Tasks.Task<IEnumerable<NotificationEntity>> GetUserNotificationsAsync(int userId)
     {
         return await _unitOfWork.Notifications.GetNotificationsByUserIdAsync(userId);
     }
 
-    public async Task<IEnumerable<NotificationEntity>> GetUnreadNotificationsAsync(int userId)
+    public async System.Threading.Tasks.Task<IEnumerable<NotificationEntity>> GetUnreadNotificationsAsync(int userId)
     {
         return await _unitOfWork.Notifications.GetUnreadNotificationsAsync(userId);
     }
 
-    public async Task<int> GetUnreadCountAsync(int userId)
+    public async System.Threading.Tasks.Task<int> GetUnreadCountAsync(int userId)
     {
         return await _unitOfWork.Notifications.GetUnreadCountAsync(userId);
     }
 
-    public async Task MarkAsReadAsync(int notificationId)
+    public async TaskAsync MarkAsReadAsync(int notificationId)
     {
         await _unitOfWork.Notifications.MarkAsReadAsync(notificationId);
         await _unitOfWork.SaveChangesAsync();
     }
 
-    public async Task MarkAllAsReadAsync(int userId)
+    public async TaskAsync MarkAllAsReadAsync(int userId)
     {
         await _unitOfWork.Notifications.MarkAllAsReadAsync(userId);
         await _unitOfWork.SaveChangesAsync();
     }
 
-    public async Task SendTaskAssignmentNotificationAsync(int userId, string taskTitle)
+    public async TaskAsync SendTaskAssignmentNotificationAsync(int userId, string taskTitle)
     {
         var message = $"New task assigned: '{taskTitle}'. Please review and start working on it.";
         await CreateNotificationAsync(userId, "TaskAssigned", message);
     }
 
-    public async Task SendLogReminderNotificationAsync(int userId)
+    public async TaskAsync SendLogReminderNotificationAsync(int userId)
     {
         var message = "Reminder: Please log your work hours for today.";
         await CreateNotificationAsync(userId, "LogReminder", message);
     }
 
-    public async Task SendTaskDeadlineNotificationAsync(int userId, string taskTitle, DateTime dueDate)
+    public async TaskAsync SendTaskDeadlineNotificationAsync(int userId, string taskTitle, DateTime dueDate)
     {
         var daysRemaining = (dueDate.Date - DateTime.UtcNow.Date).Days;
         var urgency = daysRemaining <= 1 ? "urgent" : $"due in {daysRemaining} days";
         var message = $"Task '{taskTitle}' is {urgency}. Please complete it by {dueDate:MMM dd, yyyy}.";
-        
+
         await CreateNotificationAsync(userId, "TaskDeadline", message);
     }
 }

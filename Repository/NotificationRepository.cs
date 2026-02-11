@@ -11,7 +11,7 @@ public class NotificationRepository : GenericRepository<NotificationEntity>, INo
     {
     }
 
-    public async Task<IEnumerable<NotificationEntity>> GetNotificationsByUserIdAsync(int userId)
+    public async System.Threading.Tasks.Task<IEnumerable<NotificationEntity>> GetNotificationsByUserIdAsync(int userId)
     {
         return await _dbSet
             .Where(n => n.UserId == userId)
@@ -19,7 +19,7 @@ public class NotificationRepository : GenericRepository<NotificationEntity>, INo
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<NotificationEntity>> GetUnreadNotificationsAsync(int userId)
+    public async System.Threading.Tasks.Task<IEnumerable<NotificationEntity>> GetUnreadNotificationsAsync(int userId)
     {
         return await _dbSet
             .Where(n => n.UserId == userId && n.Status == "Unread")
@@ -27,13 +27,13 @@ public class NotificationRepository : GenericRepository<NotificationEntity>, INo
             .ToListAsync();
     }
 
-    public async Task<int> GetUnreadCountAsync(int userId)
+    public async System.Threading.Tasks.Task<int> GetUnreadCountAsync(int userId)
     {
         return await _dbSet
             .CountAsync(n => n.UserId == userId && n.Status == "Unread");
     }
 
-    public async Task MarkAsReadAsync(int notificationId)
+    public async System.Threading.Tasks.Task MarkAsReadAsync(int notificationId)
     {
         var notification = await _dbSet.FindAsync(notificationId);
         if (notification != null)
@@ -43,7 +43,7 @@ public class NotificationRepository : GenericRepository<NotificationEntity>, INo
         }
     }
 
-    public async Task MarkAllAsReadAsync(int userId)
+    public async System.Threading.Tasks.Task MarkAllAsReadAsync(int userId)
     {
         var unreadNotifications = await _dbSet
             .Where(n => n.UserId == userId && n.Status == "Unread")

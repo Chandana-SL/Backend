@@ -4,13 +4,13 @@ namespace TimeTrack.API.Service;
 
 public interface INotificationService
 {
-    Task CreateNotificationAsync(int userId, string type, string message);
-    Task<IEnumerable<NotificationEntity>> GetUserNotificationsAsync(int userId);
-    Task<IEnumerable<NotificationEntity>> GetUnreadNotificationsAsync(int userId);
-    Task<int> GetUnreadCountAsync(int userId);
-    Task MarkAsReadAsync(int notificationId);
-    Task MarkAllAsReadAsync(int userId);
-    Task SendTaskAssignmentNotificationAsync(int userId, string taskTitle);
-    Task SendLogReminderNotificationAsync(int userId);
-    Task SendTaskDeadlineNotificationAsync(int userId, string taskTitle, DateTime dueDate);
+    System.Threading.Tasks.Task CreateNotificationAsync(int userId, string type, string message);
+    System.Threading.Tasks.Task<IEnumerable<NotificationEntity>> GetUserNotificationsAsync(int userId);
+    System.Threading.Tasks.Task<IEnumerable<NotificationEntity>> GetUnreadNotificationsAsync(int userId);
+    System.Threading.Tasks.Task<int> GetUnreadCountAsync(int userId);
+    System.Threading.Tasks.Task MarkAsReadAsync(int notificationId);
+    System.Threading.Tasks.Task MarkAllAsReadAsync(int userId);
+    System.Threading.Tasks.Task SendTaskAssignmentNotificationAsync(int userId, string taskTitle);
+    System.Threading.Tasks.Task SendLogReminderNotificationAsync(int userId);
+    System.Threading.Tasks.Task SendTaskDeadlineNotificationAsync(int userId, string taskTitle, DateTime dueDate);
 }

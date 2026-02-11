@@ -55,14 +55,14 @@ public class AuthenticationService : IAuthenticationService
 
     public async Task<LoginResponseDto> RegisterAsync(RegisterRequestDto request)
     {
-        // Validate department and role
-        request.Validate();
-
-        if (await _unitOfWork.Users.EmailExistsAsync(request.Email))
+        // Check if user exists
+        var existingUser = await _unitOfWork.Users.GetByEmailAsync(request.Email);
+        if (existingUser != null)
         {
-            throw new InvalidOperationException("Email already registered");
+            throw new InvalidOperationException("User with this email already exists");
         }
 
+        // Create new user
         var user = new UserEntity
         {
             Name = request.Name,
@@ -77,6 +77,20 @@ public class AuthenticationService : IAuthenticationService
         await _unitOfWork.Users.AddAsync(user);
         await _unitOfWork.SaveChangesAsync();
 
+        // Create welcome notification
+        var notification = new NotificationEntity
+        {
+            UserId = user.UserId,
+            Type = "Success",
+            Message = $"Welcome to TimeTrack, {user.Name}!",
+            Status = "Unread",
+            CreatedDate = DateTime.UtcNow
+        };
+
+        await _unitOfWork.Notifications.AddAsync(notification);
+        await _unitOfWork.SaveChangesAsync();
+
+        // Generate token and return login response
         var token = GenerateJwtToken(user.UserId, user.Email, user.Role);
         var expirationMinutes = int.Parse(_configuration["JwtSettings:ExpirationMinutes"] ?? "480");
 

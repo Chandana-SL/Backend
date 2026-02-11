@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using TimeTrack.API.DTOs.Task;
 using TimeTrack.API.Models;
 using TimeTrack.API.Repository.IRepository;
@@ -15,7 +18,7 @@ public class TaskManagementService : ITaskManagementService
         _notificationService = notificationService;
     }
 
-    public async Task<TaskResponseDto> CreateTaskAsync(int creatorId, CreateTaskDto dto)
+    public async System.Threading.Tasks.Task<TaskResponseDto> CreateTaskAsync(int creatorId, CreateTaskDto dto)
     {
         var assignedUser = await _unitOfWork.Users.GetByIdAsync(dto.AssignedToUserId);
         if (assignedUser == null || assignedUser.Status != "Active")
@@ -48,7 +51,7 @@ public class TaskManagementService : ITaskManagementService
         return await BuildTaskResponseDto(taskEntity);
     }
 
-    public async Task<TaskResponseDto> UpdateTaskAsync(int taskId, CreateTaskDto dto)
+    public async System.Threading.Tasks.Task<TaskResponseDto> UpdateTaskAsync(int taskId, CreateTaskDto dto)
     {
         var taskEntity = await _unitOfWork.Tasks.GetByIdAsync(taskId);
         if (taskEntity == null)
@@ -69,7 +72,7 @@ public class TaskManagementService : ITaskManagementService
         return await BuildTaskResponseDto(taskEntity);
     }
 
-    public async Task<bool> DeleteTaskAsync(int taskId)
+    public async System.Threading.Tasks.Task<bool> DeleteTaskAsync(int taskId)
     {
         var taskEntity = await _unitOfWork.Tasks.GetByIdAsync(taskId);
         if (taskEntity == null)
@@ -88,7 +91,7 @@ public class TaskManagementService : ITaskManagementService
         return true;
     }
 
-    public async Task<TaskResponseDto> GetTaskByIdAsync(int taskId)
+    public async System.Threading.Tasks.Task<TaskResponseDto> GetTaskByIdAsync(int taskId)
     {
         var taskEntity = await _unitOfWork.Tasks.GetByIdAsync(taskId);
         if (taskEntity == null)
@@ -99,7 +102,7 @@ public class TaskManagementService : ITaskManagementService
         return await BuildTaskResponseDto(taskEntity);
     }
 
-    public async Task<IEnumerable<TaskResponseDto>> GetUserTasksAsync(int userId)
+    public async System.Threading.Tasks.Task<IEnumerable<TaskResponseDto>> GetUserTasksAsync(int userId)
     {
         var tasks = await _unitOfWork.Tasks.GetTasksByAssignedUserAsync(userId);
         var taskResponses = new List<TaskResponseDto>();
@@ -112,7 +115,7 @@ public class TaskManagementService : ITaskManagementService
         return taskResponses;
     }
 
-    public async Task<IEnumerable<TaskResponseDto>> GetCreatedTasksAsync(int creatorId)
+    public async System.Threading.Tasks.Task<IEnumerable<TaskResponseDto>> GetCreatedTasksAsync(int creatorId)
     {
         var tasks = await _unitOfWork.Tasks.GetTasksByCreatorAsync(creatorId);
         var taskResponses = new List<TaskResponseDto>();
@@ -125,7 +128,7 @@ public class TaskManagementService : ITaskManagementService
         return taskResponses;
     }
 
-    public async Task<bool> UpdateTaskStatusAsync(int taskId, string status)
+    public async System.Threading.Tasks.Task<bool> UpdateTaskStatusAsync(int taskId, string status)
     {
         var validStatuses = new[] { "Pending", "InProgress", "Completed" };
         if (!validStatuses.Contains(status))
@@ -159,7 +162,7 @@ public class TaskManagementService : ITaskManagementService
         return true;
     }
 
-    public async Task<bool> LogTaskTimeAsync(int userId, LogTaskTimeDto dto)
+    public async System.Threading.Tasks.Task<bool> LogTaskTimeAsync(int userId, LogTaskTimeDto dto)
     {
         var taskEntity = await _unitOfWork.Tasks.GetByIdAsync(dto.TaskId);
         if (taskEntity == null)
@@ -196,7 +199,7 @@ public class TaskManagementService : ITaskManagementService
         return true;
     }
 
-    public async Task<IEnumerable<TaskResponseDto>> GetOverdueTasksAsync()
+    public async System.Threading.Tasks.Task<IEnumerable<TaskResponseDto>> GetOverdueTasksAsync()
     {
         var overdueTasks = await _unitOfWork.Tasks.GetOverdueTasksAsync();
         var taskResponses = new List<TaskResponseDto>();
@@ -209,7 +212,7 @@ public class TaskManagementService : ITaskManagementService
         return taskResponses;
     }
 
-    private async Task<TaskResponseDto> BuildTaskResponseDto(TaskEntity task)
+    private async System.Threading.Tasks.Task<TaskResponseDto> BuildTaskResponseDto(TaskEntity task)
     {
         var actualHours = await _unitOfWork.TaskTimes.GetTotalHoursForTaskAsync(task.TaskId);
 
