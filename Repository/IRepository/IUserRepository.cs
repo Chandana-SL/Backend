@@ -11,4 +11,5 @@ public interface IUserRepository : IGenericRepository<UserEntity>
     Task<UserEntity?> GetByIdWithManagerAsync(int userId);
     Task<IEnumerable<UserEntity>> GetAllWithManagerAsync();
     Task<IEnumerable<UserEntity>> GetEmployeesByManagerIdAsync(int managerId);
+    Task<int> GetEmployeesCountByManagerIdAsync(int managerId);
 }
