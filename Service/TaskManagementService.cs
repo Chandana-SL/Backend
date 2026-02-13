@@ -23,6 +23,9 @@ public class TaskManagementService : ITaskManagementService
             throw new InvalidOperationException("Cannot assign task to inactive or non-existent user");
         }
 
+        var now = DateTime.UtcNow;
+        var status = dto.Status ?? "Pending";
+
         var taskEntity = new TaskEntity
         {
             Title = dto.Title,
@@ -31,16 +34,21 @@ public class TaskManagementService : ITaskManagementService
             CreatedByUserId = creatorId,
             ProjectId = dto.ProjectId,
             EstimatedHours = dto.EstimatedHours,
-            Status = "Pending",
+            Status = status,
             Priority = dto.Priority,
             DueDate = dto.DueDate,
-            CreatedDate = DateTime.UtcNow
+            CreatedDate = now,
+            // Set real-time values based on status
+            StartedDate = status is "InProgress" or "Completed" or "Approved" ? now : null,
+            CompletedDate = status is "Completed" or "Approved" ? now : null,
+            IsApproved = status == "Approved",
+            ApprovedDate = status == "Approved" ? now : null,
+            ApprovedByUserId = status == "Approved" ? creatorId : null
         };
 
         await _unitOfWork.Tasks.AddAsync(taskEntity);
         await _unitOfWork.SaveChangesAsync();
 
-        // Send notification to assigned user
         await _notificationService.SendTaskAssignmentNotificationAsync(
             dto.AssignedToUserId, 
             dto.Title
@@ -57,14 +65,63 @@ public class TaskManagementService : ITaskManagementService
             throw new KeyNotFoundException($"Task with ID {taskId} not found");
         }
 
+        var now = DateTime.UtcNow;
+        var previousStatus = taskEntity.Status;
+        var newStatus = dto.Status ?? taskEntity.Status;
+
         taskEntity.Title = dto.Title;
         taskEntity.Description = dto.Description;
         taskEntity.AssignedToUserId = dto.AssignedToUserId;
         taskEntity.ProjectId = dto.ProjectId;
         taskEntity.EstimatedHours = dto.EstimatedHours;
         taskEntity.Priority = dto.Priority;
-        taskEntity.Status = dto.Status;
         taskEntity.DueDate = dto.DueDate;
+
+        // Update status and set real-time timestamps when status changes
+        if (newStatus != previousStatus)
+        {
+            taskEntity.Status = newStatus;
+
+            // Set StartedDate when moving to InProgress
+            if (newStatus == "InProgress" && taskEntity.StartedDate == null)
+            {
+                taskEntity.StartedDate = now;
+            }
+
+            // Set CompletedDate when moving to Completed
+            if (newStatus == "Completed")
+            {
+                taskEntity.CompletedDate = now;
+                taskEntity.IsApproved = false; // Pending approval
+            }
+
+            // Set ApprovedDate when moving to Approved
+            if (newStatus == "Approved")
+            {
+                taskEntity.CompletedDate ??= now;
+                taskEntity.IsApproved = true;
+                taskEntity.ApprovedDate = now;
+                // ApprovedByUserId should be set via ApproveTaskAsync with manager ID
+            }
+
+            // Reset dates if moving backwards in workflow
+            if (newStatus == "Pending")
+            {
+                taskEntity.StartedDate = null;
+                taskEntity.CompletedDate = null;
+                taskEntity.IsApproved = false;
+                taskEntity.ApprovedDate = null;
+                taskEntity.ApprovedByUserId = null;
+            }
+
+            if (newStatus == "InProgress" && previousStatus is "Completed" or "Approved")
+            {
+                taskEntity.CompletedDate = null;
+                taskEntity.IsApproved = false;
+                taskEntity.ApprovedDate = null;
+                taskEntity.ApprovedByUserId = null;
+            }
+        }
 
         _unitOfWork.Tasks.Update(taskEntity);
         await _unitOfWork.SaveChangesAsync();
@@ -80,9 +137,9 @@ public class TaskManagementService : ITaskManagementService
             return false;
         }
 
-        if (taskEntity.Status == "Completed")
+        if (taskEntity.Status == "Completed" || taskEntity.IsApproved)
         {
-            throw new InvalidOperationException("Cannot delete completed tasks");
+            throw new InvalidOperationException("Cannot delete completed or approved tasks");
         }
 
         _unitOfWork.Tasks.Delete(taskEntity);
@@ -128,9 +185,164 @@ public class TaskManagementService : ITaskManagementService
         return taskResponses;
     }
 
+    // ==================== NEW: START TASK ====================
+    public async Task<TaskResponseDto> StartTaskAsync(int taskId, int userId)
+    {
+        var taskEntity = await _unitOfWork.Tasks.GetByIdAsync(taskId);
+        if (taskEntity == null)
+        {
+            throw new KeyNotFoundException($"Task with ID {taskId} not found");
+        }
+
+        if (taskEntity.AssignedToUserId != userId)
+        {
+            throw new UnauthorizedAccessException("You can only start tasks assigned to you");
+        }
+
+        if (taskEntity.Status != "Pending")
+        {
+            throw new InvalidOperationException($"Cannot start task. Current status: {taskEntity.Status}. Only 'Pending' tasks can be started.");
+        }
+
+        taskEntity.Status = "InProgress";
+        taskEntity.StartedDate = DateTime.UtcNow;
+
+        _unitOfWork.Tasks.Update(taskEntity);
+        await _unitOfWork.SaveChangesAsync();
+
+        // Notify manager that task has been started
+        await _notificationService.CreateNotificationAsync(
+            taskEntity.CreatedByUserId,
+            "TaskStarted",
+            $"Task '{taskEntity.Title}' has been started by {taskEntity.AssignedToUser?.Name}"
+        );
+
+        return await BuildTaskResponseDto(taskEntity);
+    }
+
+    // ==================== NEW: COMPLETE TASK ====================
+    public async Task<TaskResponseDto> CompleteTaskAsync(int taskId, int userId)
+    {
+        var taskEntity = await _unitOfWork.Tasks.GetByIdAsync(taskId);
+        if (taskEntity == null)
+        {
+            throw new KeyNotFoundException($"Task with ID {taskId} not found");
+        }
+
+        if (taskEntity.AssignedToUserId != userId)
+        {
+            throw new UnauthorizedAccessException("You can only complete tasks assigned to you");
+        }
+
+        if (taskEntity.Status != "InProgress")
+        {
+            throw new InvalidOperationException($"Cannot complete task. Current status: {taskEntity.Status}. Only 'InProgress' tasks can be completed.");
+        }
+
+        taskEntity.Status = "Completed";
+        taskEntity.CompletedDate = DateTime.UtcNow;
+        taskEntity.IsApproved = false; // Pending approval
+
+        _unitOfWork.Tasks.Update(taskEntity);
+        await _unitOfWork.SaveChangesAsync();
+
+        // Notify manager that task is completed and pending approval
+        await _notificationService.CreateNotificationAsync(
+            taskEntity.CreatedByUserId,
+            "TaskPendingApproval",
+            $"Task '{taskEntity.Title}' has been completed by {taskEntity.AssignedToUser?.Name} and is awaiting your approval"
+        );
+
+        return await BuildTaskResponseDto(taskEntity);
+    }
+
+    // ==================== NEW: APPROVE TASK ====================
+    public async Task<TaskResponseDto> ApproveTaskAsync(int taskId, int managerId)
+    {
+        var taskEntity = await _unitOfWork.Tasks.GetByIdAsync(taskId);
+        if (taskEntity == null)
+        {
+            throw new KeyNotFoundException($"Task with ID {taskId} not found");
+        }
+
+        if (taskEntity.Status != "Completed")
+        {
+            throw new InvalidOperationException("Only completed tasks can be approved");
+        }
+
+        if (taskEntity.IsApproved)
+        {
+            throw new InvalidOperationException("Task is already approved");
+        }
+
+        taskEntity.IsApproved = true;
+        taskEntity.ApprovedDate = DateTime.UtcNow;
+        taskEntity.ApprovedByUserId = managerId;
+        taskEntity.Status = "Approved";
+
+        _unitOfWork.Tasks.Update(taskEntity);
+        await _unitOfWork.SaveChangesAsync();
+
+        // Notify employee that task has been approved
+        await _notificationService.CreateNotificationAsync(
+            taskEntity.AssignedToUserId,
+            "TaskApproved",
+            $"Your task '{taskEntity.Title}' has been approved!"
+        );
+
+        return await BuildTaskResponseDto(taskEntity);
+    }
+
+    // ==================== NEW: REJECT TASK ====================
+    public async Task<TaskResponseDto> RejectTaskAsync(int taskId, int managerId, string reason)
+    {
+        var taskEntity = await _unitOfWork.Tasks.GetByIdAsync(taskId);
+        if (taskEntity == null)
+        {
+            throw new KeyNotFoundException($"Task with ID {taskId} not found");
+        }
+
+        if (taskEntity.Status != "Completed")
+        {
+            throw new InvalidOperationException("Only completed tasks can be rejected");
+        }
+
+        // Send back to InProgress
+        taskEntity.Status = "InProgress";
+        taskEntity.CompletedDate = null;
+        taskEntity.IsApproved = false;
+
+        _unitOfWork.Tasks.Update(taskEntity);
+        await _unitOfWork.SaveChangesAsync();
+
+        // Notify employee about rejection
+        await _notificationService.CreateNotificationAsync(
+            taskEntity.AssignedToUserId,
+            "TaskRejected",
+            $"Your task '{taskEntity.Title}' was rejected. Reason: {reason}"
+        );
+
+        return await BuildTaskResponseDto(taskEntity);
+    }
+
+    // ==================== NEW: GET TASKS PENDING APPROVAL ====================
+    public async Task<IEnumerable<TaskResponseDto>> GetTasksPendingApprovalAsync(int managerId)
+    {
+        var tasks = await _unitOfWork.Tasks.GetTasksByCreatorAsync(managerId);
+        var pendingApprovalTasks = tasks.Where(t => t.Status == "Completed" && !t.IsApproved);
+        
+        var taskResponses = new List<TaskResponseDto>();
+        foreach (var task in pendingApprovalTasks)
+        {
+            taskResponses.Add(await BuildTaskResponseDto(task));
+        }
+
+        return taskResponses;
+    }
+
     public async Task<bool> UpdateTaskStatusAsync(int taskId, string status)
     {
-        var validStatuses = new[] { "Pending", "InProgress", "Completed" };
+        var validStatuses = new[] { "Pending", "InProgress", "Completed", "Approved" };
         if (!validStatuses.Contains(status))
         {
             throw new ArgumentException($"Invalid status. Valid statuses: {string.Join(", ", validStatuses)}");
@@ -144,11 +356,15 @@ public class TaskManagementService : ITaskManagementService
 
         taskEntity.Status = status;
 
+        if (status == "InProgress" && taskEntity.StartedDate == null)
+        {
+            taskEntity.StartedDate = DateTime.UtcNow;
+        }
+
         if (status == "Completed")
         {
             taskEntity.CompletedDate = DateTime.UtcNow;
             
-            // Notify task creator about completion
             await _notificationService.CreateNotificationAsync(
                 taskEntity.CreatedByUserId,
                 "TaskCompleted",
@@ -186,14 +402,6 @@ public class TaskManagementService : ITaskManagementService
         };
 
         await _unitOfWork.TaskTimes.AddAsync(taskTime);
-
-        // Auto-update task status to InProgress if currently Pending
-        if (taskEntity.Status == "Pending")
-        {
-            taskEntity.Status = "InProgress";
-            _unitOfWork.Tasks.Update(taskEntity);
-        }
-
         await _unitOfWork.SaveChangesAsync();
 
         return true;
@@ -233,7 +441,11 @@ public class TaskManagementService : ITaskManagementService
             Priority = task.Priority,
             DueDate = task.DueDate,
             CreatedDate = task.CreatedDate,
-            CompletedDate = task.CompletedDate
+            StartedDate = task.StartedDate,
+            CompletedDate = task.CompletedDate,
+            IsApproved = task.IsApproved,
+            ApprovedDate = task.ApprovedDate,
+            ApprovedByUserName = task.ApprovedByUser?.Name
         };
     }
 }
