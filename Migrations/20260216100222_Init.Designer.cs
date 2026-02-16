@@ -12,8 +12,8 @@ using TimeTrack.API.Data;
 namespace TimeTrack.API.Migrations
 {
     [DbContext(typeof(TimeTrackDbContext))]
-    [Migration("20260213094119_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260216100222_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -187,6 +187,12 @@ namespace TimeTrack.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TaskId"));
 
+                    b.Property<int?>("ApprovedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ApprovedDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("AssignedToUserId")
                         .HasColumnType("int");
 
@@ -210,6 +216,9 @@ namespace TimeTrack.API.Migrations
                     b.Property<decimal>("EstimatedHours")
                         .HasColumnType("decimal(5,2)");
 
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Priority")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -219,6 +228,9 @@ namespace TimeTrack.API.Migrations
 
                     b.Property<int?>("ProjectId")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("StartedDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -233,6 +245,8 @@ namespace TimeTrack.API.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.HasKey("TaskId");
+
+                    b.HasIndex("ApprovedByUserId");
 
                     b.HasIndex("AssignedToUserId");
 
@@ -433,6 +447,10 @@ namespace TimeTrack.API.Migrations
 
             modelBuilder.Entity("TimeTrack.API.Models.TaskEntity", b =>
                 {
+                    b.HasOne("TimeTrack.API.Models.UserEntity", "ApprovedByUser")
+                        .WithMany()
+                        .HasForeignKey("ApprovedByUserId");
+
                     b.HasOne("TimeTrack.API.Models.UserEntity", "AssignedToUser")
                         .WithMany("AssignedTasks")
                         .HasForeignKey("AssignedToUserId")
@@ -449,6 +467,8 @@ namespace TimeTrack.API.Migrations
                         .WithMany("Tasks")
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ApprovedByUser");
 
                     b.Navigation("AssignedToUser");
 

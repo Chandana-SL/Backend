@@ -12,8 +12,8 @@ using TimeTrack.API.Data;
 namespace TimeTrack.API.Migrations
 {
     [DbContext(typeof(TimeTrackDbContext))]
-    [Migration("20260213101013_AddTaskApprovalWorkflow")]
-    partial class AddTaskApprovalWorkflow
+    [Migration("20260216103830_Initialise")]
+    partial class Initialise
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -46,10 +46,8 @@ namespace TimeTrack.API.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasDefaultValue("Unread");
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -61,7 +59,7 @@ namespace TimeTrack.API.Migrations
 
                     b.HasKey("NotificationId");
 
-                    b.HasIndex("UserId", "Status");
+                    b.HasIndex("UserId");
 
                     b.ToTable("Notifications");
                 });
@@ -103,6 +101,10 @@ namespace TimeTrack.API.Migrations
                     b.Property<DateTime?>("ProcessedDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -110,15 +112,10 @@ namespace TimeTrack.API.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasDefaultValue("Pending");
+                        .HasColumnType("nvarchar(20)");
 
                     b.HasKey("RegistrationId");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
 
                     b.HasIndex("ProcessedByUserId");
 
@@ -165,16 +162,12 @@ namespace TimeTrack.API.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasDefaultValue("Active");
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("ProjectId");
 
                     b.HasIndex("ManagerUserId");
-
-                    b.HasIndex("Status");
 
                     b.ToTable("Projects");
                 });
@@ -221,10 +214,8 @@ namespace TimeTrack.API.Migrations
 
                     b.Property<string>("Priority")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasDefaultValue("Medium");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<int?>("ProjectId")
                         .HasColumnType("int");
@@ -234,10 +225,8 @@ namespace TimeTrack.API.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasDefaultValue("Pending");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -287,9 +276,9 @@ namespace TimeTrack.API.Migrations
 
                     b.HasKey("TaskTimeId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("TaskId");
 
-                    b.HasIndex("TaskId", "UserId", "Date");
+                    b.HasIndex("UserId");
 
                     b.ToTable("TaskTimes");
                 });
@@ -336,7 +325,7 @@ namespace TimeTrack.API.Migrations
 
                     b.HasKey("LogId");
 
-                    b.HasIndex("UserId", "Date");
+                    b.HasIndex("UserId");
 
                     b.ToTable("TimeLogs");
                 });
@@ -385,32 +374,14 @@ namespace TimeTrack.API.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasDefaultValue("Active");
+                        .HasColumnType("nvarchar(20)");
 
                     b.HasKey("UserId");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
 
                     b.HasIndex("ManagerId");
 
                     b.ToTable("Users");
-
-                    b.HasData(
-                        new
-                        {
-                            UserId = 1,
-                            CreatedDate = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Department = "Multi Cloud",
-                            Email = "admin@timetrack.com",
-                            Name = "System Administrator",
-                            PasswordHash = "$2a$11$X7ZQ3Z3Z3Z3Z3Z3Z3Z3Z3uK8vJ8vJ8vJ8vJ8vJ8vJ8vJ8vJ8vJ8vJ8",
-                            Role = "Admin",
-                            Status = "Active"
-                        });
                 });
 
             modelBuilder.Entity("TimeTrack.API.Models.NotificationEntity", b =>
@@ -428,8 +399,7 @@ namespace TimeTrack.API.Migrations
                 {
                     b.HasOne("TimeTrack.API.Models.UserEntity", "ProcessedByUser")
                         .WithMany()
-                        .HasForeignKey("ProcessedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("ProcessedByUserId");
 
                     b.Navigation("ProcessedByUser");
                 });
@@ -465,8 +435,7 @@ namespace TimeTrack.API.Migrations
 
                     b.HasOne("TimeTrack.API.Models.ProjectEntity", "Project")
                         .WithMany("Tasks")
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("ProjectId");
 
                     b.Navigation("ApprovedByUser");
 
@@ -488,7 +457,7 @@ namespace TimeTrack.API.Migrations
                     b.HasOne("TimeTrack.API.Models.UserEntity", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Task");
@@ -510,9 +479,8 @@ namespace TimeTrack.API.Migrations
             modelBuilder.Entity("TimeTrack.API.Models.UserEntity", b =>
                 {
                     b.HasOne("TimeTrack.API.Models.UserEntity", "Manager")
-                        .WithMany("AssignedEmployees")
-                        .HasForeignKey("ManagerId")
-                        .OnDelete(DeleteBehavior.NoAction);
+                        .WithMany("Employees")
+                        .HasForeignKey("ManagerId");
 
                     b.Navigation("Manager");
                 });
@@ -529,11 +497,11 @@ namespace TimeTrack.API.Migrations
 
             modelBuilder.Entity("TimeTrack.API.Models.UserEntity", b =>
                 {
-                    b.Navigation("AssignedEmployees");
-
                     b.Navigation("AssignedTasks");
 
                     b.Navigation("CreatedTasks");
+
+                    b.Navigation("Employees");
 
                     b.Navigation("Notifications");
 
