@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TimeTrack.API.Models
 {
+    [Table("TimeLogs")]
     public class TimeLog
     {
         [Key]
@@ -13,30 +14,31 @@ namespace TimeTrack.API.Models
         public Guid UserId { get; set; }
 
         [Required]
+        [Column(TypeName = "date")]
         public DateTime Date { get; set; }
 
         [Required]
+        [Column(TypeName = "time")]
         public TimeSpan StartTime { get; set; }
 
+        [Column(TypeName = "time")]
+        public TimeSpan? EndTime { get; set; }
+
         [Required]
-        public TimeSpan EndTime { get; set; }
+        public int BreakDuration { get; set; }
 
-        public TimeSpan BreakDuration { get; set; }
-
-        [Column(TypeName = "decimal(5,2)")]
+        [Required]
+        [Column(TypeName = "decimal(18,2)")]
         public decimal TotalHours { get; set; }
 
-        [MaxLength(500)]
-        public string? Notes { get; set; }
-
-        public bool IsApproved { get; set; } = false;
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedAt { get; set; }
+        [Column(TypeName = "nvarchar(max)")]
+        public string? Activity { get; set; }
 
         // Navigation Property
         [ForeignKey(nameof(UserId))]
         public User User { get; set; } = null!;
+
+        public ICollection<Break> Breaks { get; set; } = new List<Break>();
 
         // Constructor to ensure GUID is generated
         public TimeLog()

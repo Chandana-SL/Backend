@@ -21,8 +21,6 @@ public class TimeLoggingService : ITimeLoggingService
             throw new InvalidOperationException("Time log already exists for this date");
         }
 
-        var totalHours = CalculateTotalHours(dto.StartTime, dto.EndTime, dto.BreakDuration);
-
         var timeLog = new TimeLog
         {
             UserId = userId,
@@ -30,10 +28,8 @@ public class TimeLoggingService : ITimeLoggingService
             StartTime = dto.StartTime,
             EndTime = dto.EndTime,
             BreakDuration = dto.BreakDuration,
-            TotalHours = totalHours,
-            Notes = dto.Notes,
-            IsApproved = false,
-            CreatedAt = DateTime.UtcNow
+            TotalHours = dto.TotalHours,
+            Activity = dto.Activity
         };
 
         await _unitOfWork.TimeLogs.AddAsync(timeLog);
@@ -45,23 +41,19 @@ public class TimeLoggingService : ITimeLoggingService
     public async Task<TimeLogResponseDto> UpdateTimeLogAsync(Guid logId, Guid userId, CreateTimeLogDto dto)
     {
         var timeLog = await _unitOfWork.TimeLogs.GetByIdAsync(logId);
-        
+
         if (timeLog == null)
             throw new KeyNotFoundException("Time log not found");
 
         if (timeLog.UserId != userId)
             throw new UnauthorizedAccessException("You can only update your own time logs");
 
-        if (timeLog.IsApproved)
-            throw new InvalidOperationException("Cannot update approved time log");
-
         timeLog.Date = dto.Date.Date;
         timeLog.StartTime = dto.StartTime;
         timeLog.EndTime = dto.EndTime;
         timeLog.BreakDuration = dto.BreakDuration;
-        timeLog.TotalHours = CalculateTotalHours(dto.StartTime, dto.EndTime, dto.BreakDuration);
-        timeLog.Notes = dto.Notes;
-        timeLog.UpdatedAt = DateTime.UtcNow;
+        timeLog.TotalHours = dto.TotalHours;
+        timeLog.Activity = dto.Activity;
 
         _unitOfWork.TimeLogs.Update(timeLog);
         await _unitOfWork.SaveChangesAsync();
@@ -72,15 +64,12 @@ public class TimeLoggingService : ITimeLoggingService
     public async Task<bool> DeleteTimeLogAsync(Guid logId, Guid userId)
     {
         var timeLog = await _unitOfWork.TimeLogs.GetByIdAsync(logId);
-        
+
         if (timeLog == null)
             return false;
 
         if (timeLog.UserId != userId)
             throw new UnauthorizedAccessException("You can only delete your own time logs");
-
-        if (timeLog.IsApproved)
-            throw new InvalidOperationException("Cannot delete approved time log");
 
         _unitOfWork.TimeLogs.Delete(timeLog);
         await _unitOfWork.SaveChangesAsync();
@@ -121,9 +110,7 @@ public class TimeLoggingService : ITimeLoggingService
             EndTime = log.EndTime,
             BreakDuration = log.BreakDuration,
             TotalHours = log.TotalHours,
-            Notes = log.Notes,
-            IsApproved = log.IsApproved,
-            CreatedDate = log.CreatedAt
+            Activity = log.Activity
         });
     }
 
@@ -141,25 +128,19 @@ public class TimeLoggingService : ITimeLoggingService
             EndTime = log.EndTime,
             BreakDuration = log.BreakDuration,
             TotalHours = log.TotalHours,
-            Notes = log.Notes,
-            IsApproved = log.IsApproved,
-            CreatedDate = log.CreatedAt
+            Activity = log.Activity
         });
     }
 
     public async Task<bool> ApproveTimeLogAsync(Guid logId, Guid managerId)
     {
         var timeLog = await _unitOfWork.TimeLogs.GetByIdAsync(logId);
-        
+
         if (timeLog == null)
             return false;
 
-        timeLog.IsApproved = true;
-        timeLog.UpdatedAt = DateTime.UtcNow;
-
-        _unitOfWork.TimeLogs.Update(timeLog);
-        await _unitOfWork.SaveChangesAsync();
-
+        // IsApproved field has been removed from the model
+        // This method can be used for other approval logic if needed
         return true;
     }
 
@@ -183,31 +164,38 @@ public class TimeLoggingService : ITimeLoggingService
 
             foreach (var log in logs)
             {
+                var status = DetermineLogStatus(log);
+
                 result.Add(new TeamTimeLogDto
                 {
+                    LogId = log.LogId,
+                    EmployeeId = emp.UserId,
                     EmployeeName = emp.Name,
                     Date = log.Date,
                     StartTime = log.StartTime,
                     EndTime = log.EndTime,
                     BreakDuration = log.BreakDuration,
-                    TotalHours = log.TotalHours
+                    TotalHours = log.TotalHours,
+                    Activity = log.Activity,
+                    Status = status
                 });
             }
         }
 
-        return result;
+        return result.OrderByDescending(t => t.Date).ThenByDescending(t => t.StartTime);
+    }
+
+    private string DetermineLogStatus(TimeLog log)
+    {
+        if (log.EndTime == TimeSpan.Zero || log.TotalHours == 0)
+            return "In Progress";
+
+        return "Completed";
     }
 
     public async Task<decimal> GetTotalHoursByUsersForDateAsync(IEnumerable<Guid> userIds, DateTime date)
     {
         return await _unitOfWork.TimeLogs.GetTotalHoursByUsersForDateAsync(userIds, date);
-    }
-
-    private decimal CalculateTotalHours(TimeSpan startTime, TimeSpan endTime, TimeSpan breakDuration)
-    {
-        var totalTime = endTime - startTime;
-        var workTime = totalTime - breakDuration;
-        return (decimal)workTime.TotalHours;
     }
 
     private async Task<TimeLogResponseDto> MapToResponseDto(TimeLog timeLog)
@@ -224,9 +212,7 @@ public class TimeLoggingService : ITimeLoggingService
             EndTime = timeLog.EndTime,
             BreakDuration = timeLog.BreakDuration,
             TotalHours = timeLog.TotalHours,
-            Notes = timeLog.Notes,
-            IsApproved = timeLog.IsApproved,
-            CreatedDate = timeLog.CreatedAt
+            Activity = timeLog.Activity
         };
     }
 }

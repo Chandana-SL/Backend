@@ -25,7 +25,7 @@ public class TimeLogRepository : GenericRepository<TimeLog>, ITimeLogRepository
         return await _dbSet
             .Include(t => t.User)
             .Where(t => t.UserId == userId && t.Date >= startDate && t.Date <= endDate)
-            .OrderBy(t => t.Date)
+            .OrderByDescending(t => t.Date)
             .ToListAsync();
     }
 
@@ -54,7 +54,7 @@ public class TimeLogRepository : GenericRepository<TimeLog>, ITimeLogRepository
 
         return await _dbSet
             .Include(t => t.User)
-            .Where(t => t.User.Department == managerDepartment && !t.IsApproved)
+            .Where(t => t.User.Department == managerDepartment)
             .OrderBy(t => t.Date)
             .ToListAsync();
     }
