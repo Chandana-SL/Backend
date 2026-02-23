@@ -1,22 +1,27 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Security.Claims;
-using TimeTrack.API.DTOs.Common;
+using System.Threading.Tasks;
 using TimeTrack.API.DTOs.Productivity;
+using TimeTrack.API.DTOs.Common;
 using TimeTrack.API.Service;
 
 namespace TimeTrack.API.Controllers;
 
-[Authorize]
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class ProductivityController : ControllerBase
 {
-    private readonly IProductivityAnalyticsService _analyticsService;
+    private readonly IProductivityService _productivityService;
+    private readonly ILogger<ProductivityController> _logger;
 
-    public ProductivityController(IProductivityAnalyticsService analyticsService)
+    public ProductivityController(IProductivityService productivityService, ILogger<ProductivityController> logger)
     {
-        _analyticsService = analyticsService;
+        _productivityService = productivityService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -28,7 +33,7 @@ public class ProductivityController : ControllerBase
         [FromQuery] DateTime endDate)
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var report = await _analyticsService.GenerateUserReportAsync(userId, startDate, endDate);
+        var report = await _productivityService.GenerateUserReportAsync(userId, startDate, endDate);
         return Ok(ApiResponseDto<ProductivityReportDto>.SuccessResponse(report));
     }
 
@@ -42,7 +47,7 @@ public class ProductivityController : ControllerBase
         [FromQuery] DateTime startDate,
         [FromQuery] DateTime endDate)
     {
-        var report = await _analyticsService.GenerateUserReportAsync(userId, startDate, endDate);
+        var report = await _productivityService.GenerateUserReportAsync(userId, startDate, endDate);
         return Ok(ApiResponseDto<ProductivityReportDto>.SuccessResponse(report));
     }
 
@@ -56,7 +61,7 @@ public class ProductivityController : ControllerBase
         [FromQuery] DateTime startDate,
         [FromQuery] DateTime endDate)
     {
-        var report = await _analyticsService.GenerateDepartmentReportAsync(department, startDate, endDate);
+        var report = await _productivityService.GenerateDepartmentReportAsync(department, startDate, endDate);
         return Ok(ApiResponseDto<ProductivityReportDto>.SuccessResponse(report));
     }
 
@@ -70,7 +75,7 @@ public class ProductivityController : ControllerBase
         [FromQuery] DateTime endDate)
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var score = await _analyticsService.CalculateEfficiencyScoreAsync(userId, startDate, endDate);
+        var score = await _productivityService.CalculateEfficiencyScoreAsync(userId, startDate, endDate);
         return Ok(ApiResponseDto<decimal>.SuccessResponse(score, "Efficiency score calculated"));
     }
 
@@ -83,7 +88,31 @@ public class ProductivityController : ControllerBase
         [FromQuery] DateTime endDate)
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var rate = await _analyticsService.CalculateTaskCompletionRateAsync(userId, startDate, endDate);
+        var rate = await _productivityService.CalculateTaskCompletionRateAsync(userId, startDate, endDate);
         return Ok(ApiResponseDto<decimal>.SuccessResponse(rate, "Task completion rate calculated"));
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<ApiResponseDto<ProductivityResponseDto>>> GetProductivity()
+    {
+        _logger.LogInformation("GET /api/Productivity called");
+
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdClaim, out var userId))
+        {
+            _logger.LogWarning("Unauthorized access to /api/Productivity - missing or invalid user id claim");
+            return Unauthorized(ApiResponseDto<string>.ErrorResponse("Unauthorized"));
+        }
+
+        try
+        {
+            var result = await _productivityService.GetProductivityAsync(userId);
+            return Ok(ApiResponseDto<ProductivityResponseDto>.SuccessResponse(result));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get productivity for user {UserId}", userId);
+            return StatusCode(500, ApiResponseDto<string>.ErrorResponse("An error occurred while calculating productivity."));
+        }
     }
 }

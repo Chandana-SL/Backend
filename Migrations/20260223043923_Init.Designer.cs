@@ -12,8 +12,8 @@ using TimeTrack.API.Data;
 namespace TimeTrack.API.Migrations
 {
     [DbContext(typeof(TimeTrackDbContext))]
-    [Migration("20260221114913_AddTaskSubmissionsWithCorrectCascade")]
-    partial class AddTaskSubmissionsWithCorrectCascade
+    [Migration("20260223043923_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -212,10 +212,6 @@ namespace TimeTrack.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("ApprovalComments")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
                     b.Property<Guid?>("ApprovedByUserId")
                         .HasColumnType("uniqueidentifier");
 
@@ -244,11 +240,6 @@ namespace TimeTrack.API.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<string>("DisplayTaskId")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<DateTime?>("DueDate")
                         .HasColumnType("datetime2");
 
@@ -257,9 +248,6 @@ namespace TimeTrack.API.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("IsApproved")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
                     b.Property<string>("Priority")
@@ -283,9 +271,6 @@ namespace TimeTrack.API.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<DateTime?>("UpdatedDate")
-                        .HasColumnType("datetime2");
-
                     b.Property<Guid?>("UserId")
                         .HasColumnType("uniqueidentifier");
 
@@ -302,79 +287,6 @@ namespace TimeTrack.API.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Tasks");
-                });
-
-            modelBuilder.Entity("TimeTrack.API.Models.TaskSubmission", b =>
-                {
-                    b.Property<Guid>("SubmissionId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ApprovalComments")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<string>("ApprovalStatus")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<Guid?>("ApprovedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ApprovedByUserName")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime?>("ApprovedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Comments")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<string>("CompletionStatus")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<decimal>("HoursSpent")
-                        .HasColumnType("decimal(5,2)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Priority")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime?>("ReassignDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("SubmittedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("SubmittedByUserName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime>("SubmittedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("TaskId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("SubmissionId");
-
-                    b.HasIndex("ApprovedByUserId");
-
-                    b.HasIndex("SubmittedByUserId");
-
-                    b.HasIndex("TaskId");
-
-                    b.ToTable("TaskSubmissions");
                 });
 
             modelBuilder.Entity("TimeTrack.API.Models.TaskTime", b =>
@@ -573,32 +485,6 @@ namespace TimeTrack.API.Migrations
                     b.Navigation("CreatedByUser");
 
                     b.Navigation("Project");
-                });
-
-            modelBuilder.Entity("TimeTrack.API.Models.TaskSubmission", b =>
-                {
-                    b.HasOne("TimeTrack.API.Models.User", "ApprovedByUser")
-                        .WithMany()
-                        .HasForeignKey("ApprovedByUserId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("TimeTrack.API.Models.User", "SubmittedByUser")
-                        .WithMany()
-                        .HasForeignKey("SubmittedByUserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("TimeTrack.API.Models.TaskEntity", "Task")
-                        .WithMany()
-                        .HasForeignKey("TaskId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ApprovedByUser");
-
-                    b.Navigation("SubmittedByUser");
-
-                    b.Navigation("Task");
                 });
 
             modelBuilder.Entity("TimeTrack.API.Models.TaskTime", b =>

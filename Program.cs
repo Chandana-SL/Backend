@@ -45,6 +45,12 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 builder.Services.AddScoped<IBreakService, BreakService>();
 
+// Memory cache for caching productivity per-user
+builder.Services.AddMemoryCache();
+
+// Register productivity service
+builder.Services.AddScoped<IProductivityService, ProductivityService>();
+
 // JWT
 var jwtKey = builder.Configuration["JwtSettings:SecretKey"];
 if (string.IsNullOrEmpty(jwtKey))

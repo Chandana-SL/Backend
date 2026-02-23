@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace TimeTrack.API.Migrations
 {
     /// <inheritdoc />
-    public partial class Initi2 : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -117,15 +117,12 @@ namespace TimeTrack.API.Migrations
                 {
                     LogId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Date = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Date = table.Column<DateTime>(type: "date", nullable: false),
                     StartTime = table.Column<TimeSpan>(type: "time", nullable: false),
-                    EndTime = table.Column<TimeSpan>(type: "time", nullable: false),
-                    BreakDuration = table.Column<TimeSpan>(type: "time", nullable: false),
-                    TotalHours = table.Column<decimal>(type: "decimal(5,2)", precision: 5, scale: 2, nullable: false),
-                    Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    IsApproved = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    EndTime = table.Column<TimeSpan>(type: "time", nullable: true),
+                    BreakDuration = table.Column<int>(type: "int", nullable: false),
+                    TotalHours = table.Column<decimal>(type: "decimal(18,2)", precision: 5, scale: 2, nullable: false),
+                    Activity = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -194,6 +191,30 @@ namespace TimeTrack.API.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Breaks",
+                columns: table => new
+                {
+                    BreakId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TimeLogId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Activity = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    StartTime = table.Column<TimeSpan>(type: "time", nullable: false),
+                    EndTime = table.Column<TimeSpan>(type: "time", nullable: true),
+                    Duration = table.Column<int>(type: "int", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Breaks", x => x.BreakId);
+                    table.ForeignKey(
+                        name: "FK_Breaks_TimeLogs_TimeLogId",
+                        column: x => x.TimeLogId,
+                        principalTable: "TimeLogs",
+                        principalColumn: "LogId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "TaskTimes",
                 columns: table => new
                 {
@@ -220,6 +241,11 @@ namespace TimeTrack.API.Migrations
                         principalTable: "Users",
                         principalColumn: "UserId");
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Breaks_TimeLogId",
+                table: "Breaks",
+                column: "TimeLogId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Notifications_UserId",
@@ -285,6 +311,9 @@ namespace TimeTrack.API.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "Breaks");
+
             migrationBuilder.DropTable(
                 name: "Notifications");
 
