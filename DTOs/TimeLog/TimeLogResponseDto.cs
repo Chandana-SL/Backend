@@ -1,16 +1,33 @@
+using System.Text.Json.Serialization;
+
 namespace TimeTrack.API.DTOs.TimeLog;
 
 public class TimeLogResponseDto
 {
+    [JsonPropertyName("logId")]
     public Guid LogId { get; set; }
+
+    [JsonPropertyName("userId")]
     public Guid UserId { get; set; }
+
+    [JsonPropertyName("userName")]
     public string? UserName { get; set; }
+
+    [JsonPropertyName("date")]
     public DateTime Date { get; set; }
+
+    [JsonPropertyName("startTime")]
     public TimeSpan StartTime { get; set; }
-    public TimeSpan EndTime { get; set; }
-    public TimeSpan BreakDuration { get; set; }
+
+    [JsonPropertyName("endTime")]
+    public TimeSpan? EndTime { get; set; }
+
+    [JsonPropertyName("breakDuration")]
+    public int BreakDuration { get; set; }
+
+    [JsonPropertyName("totalHours")]
     public decimal TotalHours { get; set; }
-    public string? Notes { get; set; }
-    public bool IsApproved { get; set; }
-    public DateTime CreatedDate { get; set; }
+
+    [JsonPropertyName("activity")]
+    public string? Activity { get; set; }
 }

@@ -8,7 +8,8 @@ public interface IUnitOfWork : IDisposable
     ITaskTimeRepository TaskTimes { get; }
     INotificationRepository Notifications { get; }
     IPendingRegistrationRepository PendingRegistrations { get; }
-    
+    IBreakRepository Breaks { get; }
+
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();
     Task CommitTransactionAsync();

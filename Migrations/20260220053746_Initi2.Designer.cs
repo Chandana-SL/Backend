@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TimeTrack.API.Data;
 
@@ -11,9 +12,11 @@ using TimeTrack.API.Data;
 namespace TimeTrack.API.Migrations
 {
     [DbContext(typeof(TimeTrackDbContext))]
-    partial class TimeTrackDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260220053746_Initi2")]
+    partial class Initi2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,42 +24,6 @@ namespace TimeTrack.API.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("TimeTrack.API.Models.Break", b =>
-                {
-                    b.Property<Guid>("BreakId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Activity")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("Duration")
-                        .HasColumnType("int");
-
-                    b.Property<TimeSpan?>("EndTime")
-                        .HasColumnType("time");
-
-                    b.Property<TimeSpan>("StartTime")
-                        .HasColumnType("time");
-
-                    b.Property<Guid>("TimeLogId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("BreakId");
-
-                    b.HasIndex("TimeLogId");
-
-                    b.ToTable("Breaks");
-                });
 
             modelBuilder.Entity("TimeTrack.API.Models.Notification", b =>
                 {
@@ -327,24 +294,34 @@ namespace TimeTrack.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Activity")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<TimeSpan>("BreakDuration")
+                        .HasColumnType("time");
 
-                    b.Property<int>("BreakDuration")
-                        .HasColumnType("int");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("Date")
-                        .HasColumnType("date");
+                        .HasColumnType("datetime2");
 
-                    b.Property<TimeSpan?>("EndTime")
+                    b.Property<TimeSpan>("EndTime")
                         .HasColumnType("time");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<TimeSpan>("StartTime")
                         .HasColumnType("time");
 
                     b.Property<decimal>("TotalHours")
                         .HasPrecision(5, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
@@ -404,17 +381,6 @@ namespace TimeTrack.API.Migrations
                     b.HasIndex("ManagerId");
 
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("TimeTrack.API.Models.Break", b =>
-                {
-                    b.HasOne("TimeTrack.API.Models.TimeLog", "TimeLog")
-                        .WithMany("Breaks")
-                        .HasForeignKey("TimeLogId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("TimeLog");
                 });
 
             modelBuilder.Entity("TimeTrack.API.Models.Notification", b =>
@@ -532,11 +498,6 @@ namespace TimeTrack.API.Migrations
             modelBuilder.Entity("TimeTrack.API.Models.TaskEntity", b =>
                 {
                     b.Navigation("TaskTimes");
-                });
-
-            modelBuilder.Entity("TimeTrack.API.Models.TimeLog", b =>
-                {
-                    b.Navigation("Breaks");
                 });
 
             modelBuilder.Entity("TimeTrack.API.Models.User", b =>

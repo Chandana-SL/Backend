@@ -19,6 +19,7 @@ namespace TimeTrack.API.Data
         public DbSet<TaskTime> TaskTimes { get; set; }
         public DbSet<PendingRegistration> PendingRegistrations { get; set; }
         public DbSet<Project> Projects { get; set; }
+        public DbSet<Break> Breaks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

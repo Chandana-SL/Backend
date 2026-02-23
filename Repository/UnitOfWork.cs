@@ -17,6 +17,7 @@ public class UnitOfWork : IUnitOfWork
     public ITaskTimeRepository TaskTimes { get; }
     public INotificationRepository Notifications { get; }
     public IPendingRegistrationRepository PendingRegistrations { get; }
+    public IBreakRepository Breaks { get; }
 
     public UnitOfWork(TimeTrackDbContext context)
     {
@@ -27,6 +28,7 @@ public class UnitOfWork : IUnitOfWork
         TaskTimes = new TaskTimeRepository(_context);
         Notifications = new NotificationRepository(_context);
         PendingRegistrations = new PendingRegistrationRepository(_context);
+        Breaks = new BreakRepository(_context);
     }
 
     public async Task<int> SaveChangesAsync()
