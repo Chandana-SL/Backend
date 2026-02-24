@@ -44,6 +44,7 @@ builder.Services.AddScoped<IProductivityAnalyticsService, ProductivityAnalyticsS
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 builder.Services.AddScoped<IBreakService, BreakService>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 
 // Memory cache for caching productivity per-user
 builder.Services.AddMemoryCache();

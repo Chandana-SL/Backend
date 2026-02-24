@@ -42,6 +42,11 @@ namespace TimeTrack.API.Models
         public DateTime? ApprovedDate { get; set; }
         public Guid? ApprovedByUserId { get; set; }
 
+        public bool IsRejected { get; set; }
+
+        [MaxLength(500)]
+        public string? RejectionReason { get; set; }
+
         // Navigation properties
         [ForeignKey(nameof(AssignedToUserId))]
         public User AssignedToUser { get; set; } = null!;

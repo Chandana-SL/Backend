@@ -71,4 +71,52 @@ public class TimeLogRepository : GenericRepository<TimeLog>, ITimeLogRepository
             .Where(t => userIds.Contains(t.UserId) && t.Date.Date == date.Date)
             .SumAsync(t => t.TotalHours);
     }
+
+    // Organization Analytics Methods
+    public async Task<IEnumerable<TimeLog>> GetAllTimeLogsWithDetailsAsync(
+        DateTime? startDate, 
+        DateTime? endDate, 
+        string? department, 
+        string? status)
+    {
+        var query = _dbSet
+            .Include(t => t.User)
+            .AsQueryable();
+
+        if (startDate.HasValue)
+            query = query.Where(t => t.Date >= startDate.Value);
+
+        if (endDate.HasValue)
+            query = query.Where(t => t.Date <= endDate.Value);
+
+        if (!string.IsNullOrEmpty(department))
+            query = query.Where(t => t.User.Department == department);
+
+        // Note: TimeLog doesn't have a Status field, so we'll skip this filter for now
+        // If needed, you can add Status to TimeLog model
+
+        return await query
+            .OrderByDescending(t => t.Date)
+            .ToListAsync();
+    }
+
+    public async Task<decimal> GetTotalHoursForOrganizationAsync(DateTime startDate, DateTime endDate)
+    {
+        var total = await _dbSet
+            .Where(t => t.Date >= startDate && t.Date <= endDate)
+            .SumAsync(t => (decimal?)t.TotalHours);
+
+        return total ?? 0m;
+    }
+
+    public async Task<Dictionary<DateTime, decimal>> GetDailyHoursAggregateAsync(DateTime startDate, DateTime endDate)
+    {
+        var result = await _dbSet
+            .Where(t => t.Date >= startDate && t.Date <= endDate)
+            .GroupBy(t => t.Date.Date)
+            .Select(g => new { Date = g.Key, TotalHours = g.Sum(t => t.TotalHours) })
+            .ToDictionaryAsync(x => x.Date, x => x.TotalHours);
+
+        return result;
+    }
 }

@@ -110,6 +110,38 @@ public class UserRepository : GenericRepository<User>, IUserRepository
 
     }
 
+    // Organization Analytics Methods
+    public async Task<IEnumerable<User>> GetUsersByRoleAsync(string role)
+    {
+        return await _dbSet
+            .Where(u => u.Role == role && u.Status == "Active")
+            .ToListAsync();
+    }
+
+    public async Task<int> GetUserCountByRoleAsync(string role)
+    {
+        return await _dbSet
+            .CountAsync(u => u.Role == role && u.Status == "Active");
+    }
+
+    public async Task<IEnumerable<User>> GetPunchedInUsersAsync()
+    {
+        return await _dbSet
+            .Include(u => u.Manager)
+            .Where(u => u.Status == "Active")
+            .ToListAsync();
+    }
+
+    public async Task<List<string>> GetAllDepartmentsAsync()
+    {
+        return await _dbSet
+            .Where(u => !string.IsNullOrEmpty(u.Department))
+            .Select(u => u.Department!)
+            .Distinct()
+            .OrderBy(d => d)
+            .ToListAsync();
+    }
+
 }
 
 // Manager-Employee Self-Referencing Relationship

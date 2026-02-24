@@ -22,4 +22,10 @@ public interface IUserRepository : IGenericRepository<User>
 
     Task<int> GetEmployeesCountByManagerIdAsync(Guid managerId);
 
+    // Organization Analytics Methods
+    Task<IEnumerable<User>> GetUsersByRoleAsync(string role);
+    Task<int> GetUserCountByRoleAsync(string role);
+    Task<IEnumerable<User>> GetPunchedInUsersAsync();
+    Task<List<string>> GetAllDepartmentsAsync();
+
 }
