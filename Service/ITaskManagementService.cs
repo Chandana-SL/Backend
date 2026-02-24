@@ -20,4 +20,7 @@ public interface ITaskManagementService
     Task<TaskResponseDto> ApproveTaskAsync(Guid taskId, Guid managerId);
     Task<TaskResponseDto> RejectTaskAsync(Guid taskId, Guid managerId, string reason);
     Task<IEnumerable<TaskResponseDto>> GetTasksPendingApprovalAsync(Guid managerId);
+
+    // Organization Analytics Methods
+    Task<IEnumerable<TaskResponseDto>> GetAllTasksWithDetailsAsync(DateTime? startDate, DateTime? endDate, string? status, string? department);
 }

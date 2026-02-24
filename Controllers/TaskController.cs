@@ -169,6 +169,23 @@ public class TaskController : ControllerBase
         var result = await _taskService.GetOverdueTasksAsync();
         return Ok(ApiResponseDto<IEnumerable<TaskResponseDto>>.SuccessResponse(result));
     }
+
+    // ==================== ORGANIZATION ANALYTICS ENDPOINTS ====================
+
+    /// <summary>
+    /// Gets all tasks with details for organization analytics (Admin only)
+    /// </summary>
+    [Authorize(Policy = "AdminOnly")]
+    [HttpGet("all")]
+    public async Task<ActionResult<ApiResponseDto<IEnumerable<TaskResponseDto>>>> GetAllTasks(
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate,
+        [FromQuery] string? status,
+        [FromQuery] string? department)
+    {
+        var result = await _taskService.GetAllTasksWithDetailsAsync(startDate, endDate, status, department);
+        return Ok(ApiResponseDto<IEnumerable<TaskResponseDto>>.SuccessResponse(result));
+    }
 }
 
 public record UpdateTaskStatusRequest(string Status);

@@ -247,6 +247,71 @@ public class UserController : ControllerBase
         return Ok(ApiResponseDto<bool>.SuccessResponse(true, "User activated"));
     }
 
+    // ==================== ORGANIZATION ANALYTICS ENDPOINTS ====================
+
+    /// <summary>
+    /// Gets list of currently active/punched-in employees (Admin or Manager)
+    /// </summary>
+    [Authorize(Policy = "ManagerOrAdmin")]
+    [HttpGet("active")]
+    public async Task<ActionResult<ApiResponseDto<IEnumerable<UserInfoDto>>>> GetActiveUsers()
+    {
+        var users = await _unitOfWork.Users.GetPunchedInUsersAsync();
+        var userInfos = users.Select(u => new UserInfoDto
+        {
+            Id = u.UserId.ToString(),
+            Name = u.Name,
+            Email = u.Email,
+            Role = u.Role,
+            Department = u.Department ?? string.Empty,
+            IsActive = u.Status == "Active",
+            LastLoginAt = u.UpdatedAt,
+            PunchedInAt = null // Can be enhanced if you track punch-in separately
+        });
+
+        return Ok(ApiResponseDto<IEnumerable<UserInfoDto>>.SuccessResponse(userInfos));
+    }
+
+    /// <summary>
+    /// Gets users filtered by role (Admin only)
+    /// </summary>
+    /// <param name="role">Role to filter by (Employee, Manager, or Admin)</param>
+    /// <param name="isActive">Optional filter by active status</param>
+    [Authorize(Policy = "AdminOnly")]
+    [HttpGet("by-role/{role}")]
+    public async Task<ActionResult<ApiResponseDto<IEnumerable<UserInfoDto>>>> GetUsersByRole(
+        string role,
+        [FromQuery] bool? isActive)
+    {
+        if (string.IsNullOrWhiteSpace(role) || 
+            !new[] { "Employee", "Manager", "Admin" }.Contains(role))
+        {
+            return BadRequest(ApiResponseDto<IEnumerable<UserInfoDto>>.ErrorResponse(
+                "Invalid role. Use 'Employee', 'Manager', or 'Admin'"));
+        }
+
+        var users = await _unitOfWork.Users.GetUsersByRoleAsync(role);
+
+        if (isActive.HasValue)
+        {
+            users = users.Where(u => (u.Status == "Active") == isActive.Value);
+        }
+
+        var userInfos = users.Select(u => new UserInfoDto
+        {
+            Id = u.UserId.ToString(),
+            Name = u.Name,
+            Email = u.Email,
+            Role = u.Role,
+            Department = u.Department ?? string.Empty,
+            IsActive = u.Status == "Active",
+            LastLoginAt = u.UpdatedAt,
+            PunchedInAt = null
+        });
+
+        return Ok(ApiResponseDto<IEnumerable<UserInfoDto>>.SuccessResponse(userInfos));
+    }
+
     private static UserDto MapToDto(User u)
     {
         return new UserDto

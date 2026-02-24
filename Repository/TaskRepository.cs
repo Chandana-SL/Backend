@@ -93,4 +93,54 @@ public class TaskRepository : GenericRepository<TaskEntity>, ITaskRepository
             .Where(t => userIds.Contains(t.AssignedToUserId) && t.Status == "Active")
             .CountAsync();
     }
+
+    // Organization Analytics Methods
+    public async Task<IEnumerable<TaskEntity>> GetAllTasksWithDetailsAsync(
+        DateTime? startDate, 
+        DateTime? endDate, 
+        string? status, 
+        string? department)
+    {
+        var query = _dbSet
+            .Include(t => t.AssignedToUser)
+            .Include(t => t.CreatedByUser)
+            .Include(t => t.Project)
+            .AsQueryable();
+
+        if (startDate.HasValue)
+            query = query.Where(t => t.CreatedDate >= startDate.Value);
+
+        if (endDate.HasValue)
+            query = query.Where(t => t.CreatedDate <= endDate.Value);
+
+        if (!string.IsNullOrEmpty(status))
+            query = query.Where(t => t.Status == status);
+
+        if (!string.IsNullOrEmpty(department))
+            query = query.Where(t => t.AssignedToUser.Department == department);
+
+        return await query
+            .OrderByDescending(t => t.CreatedDate)
+            .ToListAsync();
+    }
+
+    public async Task<int> GetTaskCountByStatusAsync(string status, DateTime startDate, DateTime endDate)
+    {
+        return await _dbSet
+            .Where(t => t.Status == status && t.CreatedDate >= startDate && t.CreatedDate <= endDate)
+            .CountAsync();
+    }
+
+    public async Task<Dictionary<string, int>> GetTaskCountsByDepartmentAsync(DateTime startDate, DateTime endDate)
+    {
+        var result = await _dbSet
+            .Include(t => t.AssignedToUser)
+            .Where(t => t.CreatedDate >= startDate && t.CreatedDate <= endDate 
+                     && !string.IsNullOrEmpty(t.AssignedToUser.Department))
+            .GroupBy(t => t.AssignedToUser.Department!)
+            .Select(g => new { Department = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Department, x => x.Count);
+
+        return result;
+    }
 }

@@ -448,4 +448,22 @@ public class TaskManagementService : ITaskManagementService
             ApprovedByUserName = task.ApprovedByUser?.Name
         };
     }
+
+    // Organization Analytics Methods
+    public async Task<IEnumerable<TaskResponseDto>> GetAllTasksWithDetailsAsync(
+        DateTime? startDate, 
+        DateTime? endDate, 
+        string? status, 
+        string? department)
+    {
+        var tasks = await _unitOfWork.Tasks.GetAllTasksWithDetailsAsync(startDate, endDate, status, department);
+        var taskResponses = new List<TaskResponseDto>();
+
+        foreach (var task in tasks)
+        {
+            taskResponses.Add(await BuildTaskResponseDto(task));
+        }
+
+        return taskResponses;
+    }
 }

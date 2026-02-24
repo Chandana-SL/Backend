@@ -14,4 +14,7 @@ public interface ITimeLoggingService
     Task<decimal> CalculateTotalHoursAsync(Guid userId, DateTime startDate, DateTime endDate);
     Task<IEnumerable<TeamTimeLogDto>> GetTeamTimeLogsByManagerIdAsync(Guid managerId);
     Task<decimal> GetTotalHoursByUsersForDateAsync(IEnumerable<Guid> userIds, DateTime date);
+
+    // Organization Analytics Methods
+    Task<IEnumerable<TimeLogResponseDto>> GetAllTimeLogsWithDetailsAsync(DateTime? startDate, DateTime? endDate, string? department, string? status);
 }

@@ -179,4 +179,26 @@ public class TimeLogController : ControllerBase
             throw;
         }
     }
+
+    // ==================== ORGANIZATION ANALYTICS ENDPOINTS ====================
+
+    /// <summary>
+    /// Gets all time log entries with department information (Admin only)
+    /// </summary>
+    [Authorize(Policy = "AdminOnly")]
+    [HttpGet("all")]
+    public async Task<ActionResult<ApiResponseDto<IEnumerable<TimeLogResponseDto>>>> GetAllTimeLogs(
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate,
+        [FromQuery] string? departmentFilter,
+        [FromQuery] string? status)
+    {
+        var result = await _timeLoggingService.GetAllTimeLogsWithDetailsAsync(
+            startDate, 
+            endDate, 
+            departmentFilter, 
+            status);
+
+        return Ok(ApiResponseDto<IEnumerable<TimeLogResponseDto>>.SuccessResponse(result));
+    }
 }

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace TimeTrack.API.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class Init1 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -157,6 +157,8 @@ namespace TimeTrack.API.Migrations
                     IsApproved = table.Column<bool>(type: "bit", nullable: false),
                     ApprovedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     ApprovedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    IsRejected = table.Column<bool>(type: "bit", nullable: false),
+                    RejectionReason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>

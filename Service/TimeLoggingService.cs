@@ -215,4 +215,31 @@ public class TimeLoggingService : ITimeLoggingService
             Activity = timeLog.Activity
         };
     }
+
+    // Organization Analytics Methods
+    public async Task<IEnumerable<TimeLogResponseDto>> GetAllTimeLogsWithDetailsAsync(
+        DateTime? startDate, 
+        DateTime? endDate, 
+        string? department, 
+        string? status)
+    {
+        var logs = await _unitOfWork.TimeLogs.GetAllTimeLogsWithDetailsAsync(
+            startDate, 
+            endDate, 
+            department, 
+            status);
+
+        return logs.Select(log => new TimeLogResponseDto
+        {
+            LogId = log.LogId,
+            UserId = log.UserId,
+            UserName = log.User?.Name,
+            Date = log.Date,
+            StartTime = log.StartTime,
+            EndTime = log.EndTime,
+            BreakDuration = log.BreakDuration,
+            TotalHours = log.TotalHours,
+            Activity = log.Activity
+        });
+    }
 }
